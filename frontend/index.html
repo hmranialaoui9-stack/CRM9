@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f5f7fb">
+  <meta name="description" content="CRM — gérez vos contacts et suivez vos relations clients.">
+  <title>Pulse CRM — Espace clients</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="index.css">
+  <script src="index.js" defer></script>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar">
+      <a class="brand" href="#overview" aria-label="Pulse CRM, accueil"><span class="brand-mark"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M6 22.5 13.1 8l4.4 9 3.3-6 5.2 11.5H6Z"/><circle cx="24.5" cy="8" r="2.2"/></svg></span><span>pulse<span class="brand-light">crm</span></span></a>
+      <div class="workspace"><span class="workspace-avatar">N</span><span class="workspace-copy"><strong>Northstar Studio</strong><small>Espace de travail</small></span><span class="chevron">⌄</span></div>
+      <div class="nav-label">ESPACE DE TRAVAIL</div>
+      <nav class="main-nav" aria-label="Navigation principale">
+        <a class="nav-link" href="#overview"><span class="nav-icon">◫</span>Vue d'ensemble</a>
+        <a class="nav-link active" href="#clients"><span class="nav-icon">♙</span>Clients<span class="nav-count" id="nav-count">0</span></a>
+        <a class="nav-link" href="#clients"><span class="nav-icon">◷</span>Activité</a>
+        <a class="nav-link" href="#clients"><span class="nav-icon">▤</span>Rapports</a>
+      </nav>
+      <div class="nav-label tools-label">OUTILS</div>
+      <nav class="main-nav"><a class="nav-link" href="#clients"><span class="nav-icon">⚙</span>Paramètres</a><a class="nav-link" href="#help"><span class="nav-icon">?</span>Aide & support</a></nav>
+      <div class="sidebar-bottom"><div class="upgrade-card"><div class="upgrade-icon">✦</div><strong>Faites grandir<br>votre activité</strong><p>Découvrez les outils qui vous feront gagner du temps.</p><a href="#clients">Explorer Pulse <span>↗</span></a></div><div class="profile"><span class="profile-avatar">AM</span><span class="profile-copy"><strong>Alex Morgan</strong><small>Administrateur</small></span><button class="more-button" aria-label="Options du profil">···</button></div></div>
+    </aside>
+    <main class="main-content" id="overview">
+      <header class="topbar"><button class="mobile-menu" id="mobile-menu" aria-label="Ouvrir le menu">☰</button><div class="breadcrumb">Workspace <span>/</span> <strong>Clients</strong></div><div class="topbar-actions"><span class="today" id="today"></span><button class="icon-button notification-button" aria-label="Notifications">♧<i></i></button><span class="top-avatar">AM</span></div></header>
+      <section class="page-content" id="clients">
+        <div class="page-heading"><div><div class="eyebrow"><span class="eyebrow-dot"></span>ESPACE CLIENTS</div><h1>Vos clients, <span>en un seul endroit.</span></h1><p class="subtitle">Gardez le fil de chaque relation et faites avancer votre activité.</p></div><button class="primary-button" id="add-client"><span class="plus">＋</span> Ajouter un client</button></div>
+        <div class="stats-grid">
+          <article class="stat-card"><div class="stat-top"><span class="stat-label">Total clients</span><span class="stat-icon icon-purple">♙</span></div><div class="stat-value" id="stat-total">—</div><div class="stat-foot"><span class="trend neutral">●</span> Contacts enregistrés</div><div class="mini-bars" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></article>
+          <article class="stat-card"><div class="stat-top"><span class="stat-label">Clients actifs</span><span class="stat-icon icon-green">↗</span></div><div class="stat-value" id="stat-active">—</div><div class="stat-foot"><span class="trend positive">↗</span><span id="active-percent">0%</span> de votre portefeuille</div><div class="progress-track"><span id="active-progress"></span></div></article>
+          <article class="stat-card"><div class="stat-top"><span class="stat-label">Prospects</span><span class="stat-icon icon-amber">✧</span></div><div class="stat-value" id="stat-prospects">—</div><div class="stat-foot">À convertir en clients</div><div class="sparkline amber-spark" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></article>
+          <article class="stat-card"><div class="stat-top"><span class="stat-label">Inactifs</span><span class="stat-icon icon-blue">◷</span></div><div class="stat-value" id="stat-inactive">—</div><div class="stat-foot">Relations à réactiver</div><div class="inactive-dots" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></article>
+        </div>
+        <section class="clients-panel"><div class="panel-heading"><div><h2>Répertoire clients</h2><p>Consultez et gérez tous vos contacts.</p></div><button class="export-button" id="export-csv">↧ <span>Exporter</span></button></div>
+          <div class="table-toolbar"><label class="search-box"><span>⌕</span><input type="search" id="search" placeholder="Rechercher un client..." aria-label="Rechercher un client"><kbd>⌘ K</kbd></label><div class="toolbar-right"><label class="filter-select"><span>Statut :</span><select id="status-filter" aria-label="Filtrer par statut"><option value="Tous">Tous les statuts</option><option value="Actif">Actif</option><option value="Prospect">Prospect</option><option value="Inactif">Inactif</option></select><span class="select-caret">⌄</span></label><button class="filter-button" id="refresh" aria-label="Actualiser">↻</button></div></div>
+          <div class="table-wrap"><table><thead><tr><th><input type="checkbox" id="select-all" aria-label="Tout sélectionner"></th><th>CLIENT</th><th>ENTREPRISE</th><th>STATUT</th><th>TÉLÉPHONE</th><th>VILLE</th><th>AJOUTÉ LE</th><th></th></tr></thead><tbody id="client-list"></tbody></table><div class="loading-state" id="loading"><span class="spinner"></span>Chargement des clients…</div><div class="empty-state" id="empty-state" hidden><span class="empty-icon">♙</span><strong id="empty-title">Aucun client pour le moment</strong><p id="empty-copy">Ajoutez votre premier contact pour commencer.</p><button class="primary-button small-button" id="empty-add">＋ Ajouter un client</button></div></div>
+          <div class="table-footer"><span id="result-count">0 client</span><div class="pagination"><button disabled aria-label="Page précédente">‹</button><span class="page-current">1</span><button disabled aria-label="Page suivante">›</button></div></div>
+        </section>
+        <footer class="page-footer"><span>© 2025 Pulse CRM</span><span>Conçu pour des relations qui comptent <b>✦</b></span><a href="#help">Besoin d'aide ?</a></footer>
+      </section>
+    </main>
+  </div>
+  <div class="modal-backdrop" id="modal-backdrop" hidden><section class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title"><div class="modal-header"><div><div class="eyebrow"><span class="eyebrow-dot"></span>ESPACE CLIENTS</div><h2 id="modal-title">Ajouter un client</h2><p>Renseignez les informations de votre contact.</p></div><button class="close-modal" id="close-modal" aria-label="Fermer">×</button></div>
+    <form id="client-form" novalidate><div class="form-grid"><label>Prénom <span>*</span><input name="prenom" required maxlength="80" placeholder="Ex. Camille"></label><label>Nom <span>*</span><input name="nom" required maxlength="80" placeholder="Ex. Bernard"></label><label class="full-field">Adresse email <span>*</span><input name="email" type="email" required maxlength="254" placeholder="camille@entreprise.fr"></label><label>Téléphone<input name="telephone" type="tel" maxlength="30" placeholder="+33 6 12 34 56 78"></label><label>Entreprise<input name="entreprise" maxlength="120" placeholder="Nom de l'entreprise"></label><label>Ville<input name="ville" maxlength="100" placeholder="Paris"></label><label>Statut<select name="statut"><option>Prospect</option><option>Actif</option><option>Inactif</option></select></label><label class="full-field">Adresse<input name="adresse" maxlength="200" placeholder="N° et nom de rue"></label><label class="full-field">Notes<textarea name="notes" rows="3" maxlength="2000" placeholder="Informations utiles sur ce client…"></textarea></label></div><div class="form-error" id="form-error" role="alert"></div><div class="modal-footer"><span><span class="required-mark">*</span> Champs obligatoires</span><div><button type="button" class="secondary-button" id="cancel-modal">Annuler</button><button type="submit" class="primary-button" id="save-client">Enregistrer le client <span>→</span></button></div></div></form>
+  </section></div>
+  <div class="toast-region" id="toast-region" aria-live="polite" aria-atomic="true"></div>
+</body>
+</html>
