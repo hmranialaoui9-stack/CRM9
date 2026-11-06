@@ -3,6 +3,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
+const path = require('node:path');
 const connectDB = require('./config/db');
 const friendRoutes = require('./routes/friendRoutes');
 const authRoutes = require('./routes/authRoutes');
@@ -28,6 +29,8 @@ app.use(cors({
 }));
 app.use(express.json({ limit: '32kb' }));
 app.use(parseCookies);
+const publicDirectory = path.resolve(__dirname, '../public');
+app.use(express.static(publicDirectory));
 app.use('/api', originGuard(allowedOrigins || []));
 app.use('/api', async (req, res, next) => {
   try {
@@ -56,6 +59,8 @@ app.get('/api/health', (_req, res) => {
 });
 
 app.use('/api/friends', requireAuth, friendRoutes);
+
+app.get('/', (_req, res) => res.sendFile(path.join(publicDirectory, 'index.html')));
 
 app.use((_req, res) => res.status(404).json({ message: 'Route introuvable.' }));
 app.use(errorMiddleware);
