@@ -158,3 +158,29 @@ Toutes les réponses sont JSON, sauf les routes de redirection OAuth.
 | GET | `/auth/google/callback` | OAuth | Vérifie le retour Google et ouvre une session |
 
 Les routes REST `/friends` et `/friends/:id` nécessitent désormais le cookie de session. L'API conserve le modèle et les routes de gestion des amis.
+
+## Déploiement Vercel (frontend et API séparés)
+
+Le dépôt contient deux projets Vercel distincts, car les fichiers statiques du frontend et la fonction Express ont des racines de déploiement différentes. Le Runtime Log `Invalid export` est corrigé : `backend/index.js` exporte maintenant directement l'application Express ; seul `backend/dev.js`, appelé par `npm run dev`, ouvre le port local.
+
+### API Express
+
+1. Crée un projet Vercel depuis le dépôt et définis **Root Directory** sur `backend`.
+2. Vercel détecte `index.js` comme application Express. `backend/vercel.json` règle la durée maximale d'exécution de cette fonction ; aucune route n'est déplacée et Express conserve `/api/health`, `/api/friends` et `/api/auth`.
+3. Ajoute dans les variables **Production** de Vercel : `MONGODB_URI` (URI Atlas complète), `NODE_ENV=production`, `JWT_SECRET` (au moins 32 octets), `CORS_ORIGIN` (origine exacte du site frontend), `FRONTEND_URL` (URL du site frontend), `API_PUBLIC_URL` (URL du projet API), `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_CALLBACK_URL` (`<API_PUBLIC_URL>/api/auth/google/callback`) et `COOKIE_SAME_SITE=none` si le frontend et l'API sont sur des origines différentes.
+4. Dans MongoDB Atlas, vérifie que l'utilisateur de base a les droits nécessaires et que **Network Access** autorise les connexions sortantes de ton déploiement Vercel. La valeur réelle de `MONGODB_URI` n'est pas enregistrée dans le dépôt et n'a pas été inspectée.
+5. Après déploiement, ouvre `<API_PUBLIC_URL>/api/health`. La réponse attendue comprend `status: "ok"` et `database: "connected"`.
+
+### Frontend statique
+
+1. Crée un second projet Vercel depuis le même dépôt et définis **Root Directory** sur `frontend`.
+2. Configure `frontend/config.js` avec l'URL de l'API issue du premier déploiement, par exemple :
+
+```js
+window.CLUB_API_URL = 'https://club-des-amis-api.vercel.app/api';
+```
+
+3. Ajoute l'origine exacte du frontend à `CORS_ORIGIN` dans le projet API, puis redéploie l'API. Les appels utilisent `credentials: 'include'` pour les cookies HttpOnly.
+4. Si Google OAuth est utilisé, enregistre `<API_PUBLIC_URL>/api/auth/google/callback` comme URI de redirection autorisée dans Google Cloud Console.
+
+En local, `npm run dev` (ou `npm start`) depuis `backend` démarre toujours Express sur `PORT`/4000 via `dev.js`. `backend/index.js` et `backend/server.js` n'appellent jamais `app.listen()` ; Vercel les traite comme exports Express. Le listener local est dans `backend/dev.js`.

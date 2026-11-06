@@ -1,5 +1,7 @@
-// Configurez window.CLUB_API_URL avant ce script en production.
-const API_URL = (window.CLUB_API_URL || 'http://localhost:4000/api').replace(/\/+$/, '');
+// config.js peut fournir l'origine API de production. En local, l'API reste sur 4000.
+const localHost = ['localhost', '127.0.0.1'].includes(window.location.hostname);
+const defaultApiUrl = localHost ? 'http://localhost:4000/api' : `${window.location.origin}/api`;
+const API_URL = (window.CLUB_API_URL || defaultApiUrl).replace(/\/+$/, '');
 const PAGE_SIZE = 10;
 const state = { friends: [], filtered: [], page: 1, view: 'dashboard', loading: false, error: null, editingId: null, selectedFriend: null, user: null };
 const $ = (selector, root = document) => root.querySelector(selector);

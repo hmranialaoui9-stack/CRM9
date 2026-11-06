@@ -29,6 +29,21 @@ app.use(cors({
 app.use(express.json({ limit: '32kb' }));
 app.use(parseCookies);
 app.use('/api', originGuard(allowedOrigins || []));
+app.use('/api', async (req, res, next) => {
+  try {
+    await connectDB();
+    return next();
+  } catch (error) {
+    if (req.path === '/health') {
+      return res.status(503).json({
+        status: 'degraded',
+        database: 'disconnected',
+        message: 'API démarrée, MongoDB indisponible.',
+      });
+    }
+    return next(error);
+  }
+});
 app.use('/api/auth', authRoutes);
 
 app.get('/api/health', (_req, res) => {
@@ -45,13 +60,6 @@ app.use('/api/friends', requireAuth, friendRoutes);
 app.use((_req, res) => res.status(404).json({ message: 'Route introuvable.' }));
 app.use(errorMiddleware);
 
-async function start() {
-  const port = Number(process.env.PORT) || 4000;
-  const server = app.listen(port, () => console.info(`Club des Amis API disponible sur http://localhost:${port}`));
-  connectDB().catch((error) => console.error('MongoDB indisponible :', error.message));
-  return server;
-}
-
-if (require.main === module) start();
-
-module.exports = { app, start };
+// Vercel détecte l'application Express comme handler serverless via cet export.
+// Le listener local est séparé dans dev.js.
+module.exports = app;
