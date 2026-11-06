@@ -161,13 +161,14 @@ Les routes REST `/friends` et `/friends/:id` nécessitent désormais le cookie d
 
 ## Déploiement Vercel (frontend et API sur la même origine)
 
-Le dépôt se déploie comme un seul projet Vercel depuis sa racine (`CRM`). Le fichier `vercel.json` lance `npm --prefix backend run build` : le script `backend/build-public.js` copie les fichiers du frontend dans `public/`, que Vercel sert comme fichiers statiques à la racine. La fonction `backend/index.js` exporte directement l'application Express. `backend/dev.js` reste le seul point d'entrée local qui appelle `app.listen()`.
+Le dépôt se déploie comme un seul projet Vercel depuis sa racine (`CRM`). Le fichier racine `vercel.json` lance `npm ci --prefix backend`, puis `npm --prefix backend run build` : le script `backend/build-public.js` copie les fichiers du frontend dans `public/`, que Vercel sert comme fichiers statiques à la racine. La fonction `backend/index.js` exporte directement l'application Express. `backend/dev.js` reste le seul point d'entrée local qui appelle `app.listen()`.
 
 Ainsi, `/` sert `public/index.html`, tandis que `/api/health`, `/api/friends` et `/api/auth/...` sont traités par Express. Le frontend utilise `/api` sur le domaine Vercel et `http://localhost:4000/api` en local.
 
 ### Paramètres du projet Vercel
 
-- **Root Directory** : racine du dépôt (`CRM`), et non `backend` ou `frontend`.
+- **Root Directory** : racine du dépôt (`CRM`), et non `backend` ou `frontend`. L’erreur `backend/backend/package.json` indique que le projet Vercel est actuellement enraciné dans `backend` alors que sa commande ajoute déjà ce préfixe.
+- **Install Command** : défini dans `vercel.json` (`npm ci --prefix backend`), qui utilise `CRM/backend/package-lock.json` sans chercher un package imbriqué.
 - **Build Command** : défini dans `vercel.json` (`npm --prefix backend run build`).
 - **Output Directory** : laisser le réglage par défaut ; le dossier `public/` est publié par Vercel.
 - Variables Production : `MONGODB_URI` (URI Atlas), `NODE_ENV=production`, `JWT_SECRET` (au moins 32 octets), `CORS_ORIGIN=https://crm-9-xab8.vercel.app`, `FRONTEND_URL=https://crm-9-xab8.vercel.app`, `API_PUBLIC_URL=https://crm-9-xab8.vercel.app`, ainsi que les clés Google OAuth si elles sont utilisées.
