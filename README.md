@@ -161,7 +161,7 @@ Les routes REST `/friends` et `/friends/:id` nécessitent désormais le cookie d
 
 ## Déploiement Vercel (frontend et API sur la même origine)
 
-Le dépôt se déploie comme un seul projet Vercel depuis sa racine (`CRM`). Le fichier racine `vercel.json` lance `npm ci --prefix backend`, puis `npm --prefix backend run build` : le script `backend/build-public.js` copie les fichiers du frontend dans `public/`, que Vercel sert comme fichiers statiques à la racine. La fonction `backend/index.js` exporte directement l'application Express. `backend/dev.js` reste le seul point d'entrée local qui appelle `app.listen()`.
+Le dépôt se déploie comme un seul projet Vercel depuis sa racine (`CRM`). Le fichier racine `vercel.json` lance `npm ci --prefix backend`, puis `npm --prefix backend run build` : le script `backend/build-public.js` copie les fichiers du frontend dans `public/`, que Vercel sert comme fichiers statiques à la racine. Vercel détecte automatiquement l'application Express exportée par `backend/index.js` ; aucune surcharge `functions`/`includeFiles` n'est définie, les fichiers publics étant servis comme contenu statique. `backend/dev.js` reste le seul point d'entrée local qui appelle `app.listen()`.
 
 Ainsi, `/` sert `public/index.html`, tandis que `/api/health`, `/api/friends` et `/api/auth/...` sont traités par Express. Le frontend utilise `/api` sur le domaine Vercel et `http://localhost:4000/api` en local.
 

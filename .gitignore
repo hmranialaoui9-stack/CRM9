@@ -1,2 +1,3 @@
 # Frontend statique généré par backend/build-public.js avant le déploiement Vercel
 /public/
+.vercel
