@@ -1,56 +1,160 @@
-# Pulse CRM
+# Club des Amis
 
-CRM full stack de gestion de clients, avec une API Express/Mongoose et une interface HTML, CSS et JavaScript sans framework.
+Application web Full Stack pour gérer les membres du Club des Amis. Le frontend utilise HTML, CSS et JavaScript natifs ; le backend utilise Node.js, Express, Mongoose et MongoDB.
 
-## Prérequis
+## Architecture
 
-- Node.js 18 ou supérieur et npm
-- MongoDB en local, ou une instance MongoDB Atlas
+```text
+CRM/
+├── backend/
+│   ├── config/db.js
+│   ├── middleware/errorMiddleware.js
+│   ├── models/Friend.js
+│   ├── routes/friendRoutes.js
+│   ├── .env                 # configuration locale, non versionnée
+│   ├── .env.example
+│   ├── index.js
+│   └── package.json
+└── frontend/
+    ├── css/style.css
+    ├── js/app.js
+    └── index.html
+```
 
-## Installation
+Les routes et modèles CRM ont été retirés. La configuration MongoDB existante (`backend/.env`) est conservée telle quelle ; la nouvelle collection `friends` est séparée des anciennes collections MongoDB. Aucune donnée existante n'est migrée, modifiée ou supprimée.
 
-1. Démarrez MongoDB localement (ou préparez une URI Atlas).
-2. Dans un terminal, installez et démarrez l'API :
+## Prérequis et lancement
 
-   ```bash
-   cd CRM/backend
-   npm install
-   npm run dev
-   ```
+- Node.js 18+ et npm
+- MongoDB local ou Atlas accessible via l'URI déjà configurée dans `backend/.env`
 
-   Le backend lit `backend/.env`. Le fichier fourni utilise `mongodb://127.0.0.1:27017/crm` et le port `5000`. Pour une autre base, modifiez `MONGODB_URI`. `CORS_ORIGIN` est facultatif et permet de limiter les origines frontend (valeurs séparées par des virgules).
+Terminal 1 :
 
-3. Servez `frontend/` avec un serveur de fichiers statiques. Par exemple, depuis le dossier `CRM` :
+```bash
+cd CRM/backend
+npm install
+npm run dev
+```
 
-   ```bash
-   npx --yes http-server frontend -p 5500
-   ```
+L'API démarre sur le port `4000` par défaut (ou `PORT` si défini). Elle expose l'état de MongoDB sur `/api/health`, même si la base n'est pas connectée.
 
-   Ouvrez l'adresse affichée (généralement `http://localhost:5500`). Un serveur HTTP est recommandé plutôt que l'ouverture directe du fichier. Le frontend utilise par défaut `http://localhost:5000/api`. Pour le déploiement, définissez `window.CRM_API_URL` avant le chargement de `index.js` afin de cibler l'URL de votre API. Aucun secret ne doit être placé dans le frontend.
+Terminal 2 :
 
-## API
+```bash
+cd CRM
+npx --yes http-server frontend -p 5500
+```
 
-| Méthode | Route | Action |
-| --- | --- | --- |
-| GET | `/api/health` | État du serveur et de la base |
-| GET | `/api/clients` | Liste des clients |
-| GET | `/api/clients/:id` | Détail d'un client |
-| POST | `/api/clients` | Création d'un client |
-| PATCH | `/api/clients/:id` | Modification partielle |
-| DELETE | `/api/clients/:id` | Suppression |
+Ouvre `http://localhost:5500`. L'URL API par défaut est `http://localhost:4000/api`. Pour la remplacer, définis `window.CLUB_API_URL` avant le chargement de `js/app.js`. Les identifiants de base ne doivent jamais être ajoutés au frontend.
 
-Les routes clients renvoient directement le client ou la liste des clients en JSON. Les erreurs renvoient un objet `{ message }` avec un statut HTTP explicite (validation, email en doublon, identifiant invalide ou client absent). L'endpoint de santé renvoie l'état du serveur et de la base.
+Pour la configuration d'un autre environnement, copie `.env.example` vers `.env` uniquement si nécessaire, puis renseigne `MONGODB_URI`. Ne remplace pas un `.env` déjà configuré.
 
 ## Fonctionnalités
 
-- Ajout, consultation, modification et suppression des clients (confirmation avant suppression)
-- Recherche instantanée, filtre par statut, statistiques actualisées et export CSV
-- Validation des champs et notifications de succès ou d'erreur
-- Champs : prénom, nom, email unique, téléphone, entreprise, adresse, ville, statut et notes
-- Dates `createdAt` et `updatedAt` générées par Mongoose
+- Tableau de bord avec nombre de membres, nombre de villes, ville la plus représentée et derniers inscrits.
+- Annuaire avec recherche instantanée, filtre par ville et pagination.
+- Ajout, fiche détaillée, modification complète ou partielle et suppression confirmée.
+- Validation des champs dans le navigateur et dans Mongoose, messages d'erreur et notifications toast.
+- Statistiques et listes issues exclusivement de l'API ; aucun jeu de données fictif.
 
-Le modèle initialise une base vide ; aucun jeu de données n'est ajouté automatiquement. Créez vos clients depuis l'interface.
+## API REST
 
-## Déploiement
+Base URL locale : `http://localhost:4000/api`
 
-Déployez le backend et le frontend comme deux services distincts. Définissez `NODE_ENV=production`, `PORT`, `MONGODB_URI` et `CORS_ORIGIN` côté backend. Restreignez CORS à l'origine publique du frontend et configurez `window.CRM_API_URL` côté frontend. Ne versionnez jamais `.env`.
+| Méthode | Route | Résultat |
+| --- | --- | --- |
+| GET | `/health` | État API et MongoDB |
+| GET | `/friends` | Liste JSON directe, triée par date d'inscription |
+| GET | `/friends/:id` | Détail JSON d'un ami |
+| POST | `/friends` | Création, HTTP 201 |
+| PUT | `/friends/:id` | Remplacement complet des cinq champs modifiables |
+| PATCH | `/friends/:id` | Modification partielle des champs fournis |
+| DELETE | `/friends/:id` | Suppression confirmée côté frontend |
+
+Les emails sont normalisés en minuscules. Un doublon renvoie HTTP 409 ; les validations renvoient HTTP 400 ; un identifiant mal formé renvoie HTTP 400 ; un ami absent renvoie HTTP 404. Les réponses de liste sont des tableaux JSON directs et les réponses de détail/création/modification sont des objets directs.
+
+### Exemples JSON pour Postman
+
+Créer un ami avec `POST /api/friends` :
+
+```json
+{
+  "nom": "Alaoui",
+  "prenom": "Hicham",
+  "email": "hicham@example.com",
+  "telephone": "0612345678",
+  "ville": "Fès"
+}
+```
+
+Remplacement complet avec `PUT /api/friends/:id` :
+
+```json
+{
+  "nom": "Alaoui",
+  "prenom": "Hicham",
+  "email": "hicham@example.com",
+  "telephone": "+212 6 12 34 56 78",
+  "ville": "Fès"
+}
+```
+
+Modification partielle avec `PATCH /api/friends/:id` :
+
+```json
+{
+  "ville": "Casablanca"
+}
+```
+
+## Modèle Friend
+
+`nom`, `prenom`, `email`, `telephone` et `ville` sont obligatoires. `email` est unique ; `telephone` est conservé en `String` pour préserver les zéros initiaux et les indicatifs. Mongoose renseigne `createdAt` et `updatedAt` grâce à `timestamps: true`.
+
+## Contrôles
+
+Depuis le backend, les routes peuvent être vérifiées dans Postman avec les méthodes et URLs ci-dessus. Pour tester le parcours CRUD, crée un ami avec un email de test unique, récupère son identifiant dans la réponse, exécute `GET`, `PUT`, `PATCH`, puis `DELETE` sur cet identifiant. Vérifie séparément le cas de doublon avec une adresse déjà utilisée.
+
+## Comptes, connexion et sécurité
+
+L'application demande une connexion pour accéder au tableau de bord et aux routes `friends`. Les comptes locaux acceptent un numéro de téléphone et une adresse `@gmail.com`. Les mots de passe sont hachés avec bcrypt (coût 12) ; l'API délivre un JWT signé dans un cookie `HttpOnly`, `SameSite` et `Secure` en production. Le frontend ne reçoit jamais le JWT. Les inscriptions et connexions sont limitées en fréquence. La récupération de mot de passe affiche une indication honnête : un service d'envoi et une procédure de réinitialisation doivent encore être configurés.
+
+Les variables nécessaires sont listées dans `backend/.env.example`. Le fichier `backend/.env` existant n'a pas été remplacé. Ajoute les valeurs suivantes dans la configuration locale ou les variables Railway, en préservant les variables déjà présentes :
+
+- `JWT_SECRET` : secret aléatoire d'au moins 32 octets ; génère-le avec `node -e "console.log(require('node:crypto').randomBytes(48).toString('base64url'))"`.
+- `FRONTEND_URL` : origine du frontend, par exemple `http://localhost:5500`.
+- `API_PUBLIC_URL` : origine publique du backend, par exemple `https://mon-api.up.railway.app`.
+- `CORS_ORIGIN` : origine exacte du frontend autorisé (sans chemin), par exemple `http://localhost:5500`.
+- `GOOGLE_CLIENT_ID` et `GOOGLE_CLIENT_SECRET` : identifiants OAuth du projet Google Cloud.
+- `GOOGLE_CALLBACK_URL` : `http://localhost:4000/api/auth/google/callback` en local ; en production, l'URL publique de l'API suivie de `/api/auth/google/callback`.
+- `COOKIE_SAME_SITE=none` lorsque Vercel et Railway utilisent des domaines distincts. En production `Secure` est automatiquement activé. Des domaines personnalisés sous le même domaine de site améliorent la compatibilité des cookies navigateur.
+
+### Configurer Google OAuth
+
+1. Dans Google Cloud Console, crée un projet, configure l'écran de consentement OAuth et ajoute les utilisateurs de test si l'application est en mode test.
+2. Crée un identifiant OAuth de type **Application Web**. Ajoute `http://localhost:4000/api/auth/google/callback` aux URI de redirection autorisés en local, puis l'URL Railway `/api/auth/google/callback` en production.
+3. Copie le Client ID et le Client Secret dans les variables d'environnement du backend. Ne mets jamais le secret dans Vercel ni dans les fichiers frontend.
+4. Ajoute l'origine Vercel à `CORS_ORIGIN`, et renseigne `FRONTEND_URL` et `API_PUBLIC_URL`. Redéploie l'API puis le frontend.
+
+Le bouton Google lance le flux OAuth Authorization Code réel avec validation du paramètre `state`, échange du code côté serveur, vérification de l'adresse Gmail confirmée par Google, puis création ou liaison du compte.
+
+### Déploiement Vercel + Railway
+
+- **Railway** : crée un service Node depuis `CRM/backend`, commande de démarrage `npm start`, ajoute `MONGODB_URI`, `JWT_SECRET`, `NODE_ENV=production`, `FRONTEND_URL`, `API_PUBLIC_URL`, `CORS_ORIGIN`, les variables Google et `COOKIE_SAME_SITE=none`. Ajoute le domaine Railway aux URI de redirection OAuth et autorise le serveur Railway dans les règles réseau de MongoDB Atlas.
+- **Vercel** : déploie le dossier `CRM/frontend` comme site statique. Avant `js/app.js`, définis `window.CLUB_API_URL = 'https://<domaine-api-railway>/api';` dans `frontend/index.html` avec le domaine public Railway. Renseigne ensuite cette origine Vercel dans `CORS_ORIGIN` côté Railway.
+- Vérifie `/api/health`, puis l'inscription, une connexion locale, la déconnexion et Google OAuth après avoir configuré de vrais identifiants. Les cookies tiers peuvent être bloqués si les domaines frontend/API sont différents ; privilégie des domaines personnalisés liés ou un proxy Vercel sous le même domaine.
+
+## API d'authentification
+
+Toutes les réponses sont JSON, sauf les routes de redirection OAuth.
+
+| Méthode | Route | Accès | Description |
+| --- | --- | --- | --- |
+| POST | `/auth/register` | public | Inscription (`nom`, `prenom`, `telephone`, `email`, `password`, `confirmPassword`) |
+| POST | `/auth/login` | public | Connexion (`identifier` téléphone ou Gmail, `password`) |
+| POST | `/auth/logout` | public | Efface le cookie de session |
+| GET | `/auth/me` | session requise | Retourne le profil connecté |
+| GET | `/auth/google` | public | Démarre Google OAuth |
+| GET | `/auth/google/callback` | OAuth | Vérifie le retour Google et ouvre une session |
+
+Les routes REST `/friends` et `/friends/:id` nécessitent désormais le cookie de session. L'API conserve le modèle et les routes de gestion des amis.
