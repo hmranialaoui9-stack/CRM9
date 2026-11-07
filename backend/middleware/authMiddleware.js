@@ -75,8 +75,9 @@ function verifyToken(token) {
 }
 
 function publicUser(user) {
+  const fullName = user.fullName || [user.prenom, user.nom].filter(Boolean).join(' ').trim();
   return {
-    id: String(user._id), nom: user.nom, prenom: user.prenom,
+    id: String(user._id), fullName, nom: user.nom, prenom: user.prenom,
     telephone: user.telephone || '', email: user.email, authProvider: user.authProvider,
   };
 }

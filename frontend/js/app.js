@@ -325,21 +325,27 @@ function setAuthView(view) {
   const titles = {
     login: ['Heureux de vous retrouver.', 'Connectez-vous pour retrouver votre communauté.'],
     register: ['Rejoignez le Club des Amis.', 'Créez votre compte pour accéder à votre espace privé.'],
-    forgot: ['Retrouvons l’accès à votre compte.', 'Quelques informations sur la récupération de mot de passe.'],
+    forgot: ['Retrouvons l’accès à votre compte.', 'Nous allons vérifier ton adresse avant de modifier ton mot de passe.'],
+    otp: ['Vérifions ton adresse.', 'Saisis le code à six chiffres envoyé par email.'],
+    reset: ['Choisis un nouveau mot de passe.', 'Utilise au moins 10 caractères pour sécuriser ton compte.'],
   };
   const [title, subtitle] = titles[view] || titles.login;
   $('#auth-title').textContent = title;
   $('#auth-subtitle').textContent = subtitle;
   $('#login-form').hidden = view !== 'login';
   $('#register-form').hidden = view !== 'register';
-  $('#forgot-panel').hidden = view !== 'forgot';
+  $('#forgot-form').hidden = view !== 'forgot';
+  $('#otp-form').hidden = view !== 'otp';
+  $('#reset-form').hidden = view !== 'reset';
   $('#auth-switch-login').hidden = view !== 'login';
   $('#auth-switch-register').hidden = view !== 'register';
-  $('#auth-switch-forgot').hidden = view !== 'forgot';
+  $('#auth-switch-forgot').hidden = !['forgot', 'otp', 'reset'].includes(view);
   $('#login-error').textContent = '';
   $('#register-error').textContent = '';
-  $('#google-auth').hidden = view === 'forgot';
-  $('.auth-divider').hidden = view === 'forgot';
+  ['forgot-error', 'otp-error', 'reset-error'].forEach((id) => { const node = document.getElementById(id); if (node) node.textContent = ''; });
+  $('#google-auth').hidden = ['forgot', 'otp', 'reset'].includes(view);
+  $('.auth-divider').hidden = ['forgot', 'otp', 'reset'].includes(view);
+  $('#resend-code').hidden = view !== 'otp';
   document.body.dataset.authView = view;
 }
 
@@ -347,8 +353,9 @@ function showAuthenticatedApp(user) {
   state.user = user;
   $('#auth-shell').hidden = true;
   $('#app-shell').hidden = false;
-  $('#user-name').textContent = `${user.prenom || ''} ${user.nom || ''}`.trim();
-  $('#user-avatar').textContent = `${user.prenom?.[0] || ''}${user.nom?.[0] || ''}`.toLocaleUpperCase('fr') || 'CA';
+  const displayName = user.fullName || `${user.prenom || ''} ${user.nom || ''}`.trim();
+  $('#user-name').textContent = displayName;
+  $('#user-avatar').textContent = displayName.split(/\s+/).slice(0, 2).map((part) => part[0]).join('').toLocaleUpperCase('fr') || 'CA';
   routeFromHash();
   checkApiHealth();
   loadFriends();
@@ -393,6 +400,8 @@ $('#register-form').addEventListener('submit', async (event) => {
   const form = event.currentTarget;
   if (!form.reportValidity()) return;
   const values = Object.fromEntries(new FormData(form));
+  if (!/^[^\s@]+@gmail\.com$/i.test(values.email.trim())) { $('#register-error').textContent = 'Utilise une adresse Gmail valide.'; return; }
+  if (!/^\+?[\d\s().-]{8,24}$/.test(values.telephone.trim())) { $('#register-error').textContent = 'Saisis un numéro de téléphone valide.'; return; }
   if (values.password !== values.confirmPassword) { $('#register-error').textContent = 'Les mots de passe ne correspondent pas.'; return; }
   const submit = $('button[type="submit"]', form); submit.disabled = true;
   try {
@@ -400,6 +409,48 @@ $('#register-form').addEventListener('submit', async (event) => {
     form.reset(); showAuthenticatedApp(result.user); showToast('Votre compte a été créé. Bienvenue au Club des Amis !');
   } catch (error) { $('#register-error').textContent = error.message; }
   finally { submit.disabled = false; }
+});
+
+let resetEmail = '';
+let resetToken = '';
+$('#forgot-form').addEventListener('submit', async (event) => {
+  event.preventDefault(); const form = event.currentTarget; if (!form.reportValidity()) return;
+  const email = new FormData(form).get('email').trim().toLowerCase();
+  if (!/^[^\s@]+@gmail\.com$/.test(email)) { $('#forgot-error').textContent = 'Utilise une adresse Gmail valide.'; return; }
+  const button = $('button[type="submit"]', form); button.disabled = true;
+  try {
+    await api('/auth/forgot-password', { method: 'POST', body: JSON.stringify({ email }) });
+    resetEmail = email; setAuthView('otp'); $('#otp-error').textContent = 'Si cette adresse correspond à un compte, un code a été envoyé.';
+  } catch (error) { $('#forgot-error').textContent = error.message; }
+  finally { button.disabled = false; }
+});
+
+$('#otp-form').addEventListener('submit', async (event) => {
+  event.preventDefault(); const form = event.currentTarget; if (!form.reportValidity()) return;
+  const button = $('button[type="submit"]', form); button.disabled = true;
+  try {
+    const result = await api('/auth/verify-otp', { method: 'POST', body: JSON.stringify({ email: resetEmail, code: new FormData(form).get('code') }) });
+    resetToken = result.resetToken; setAuthView('reset');
+  } catch (error) { $('#otp-error').textContent = error.message; }
+  finally { button.disabled = false; }
+});
+
+$('#resend-code').addEventListener('click', async () => {
+  try { await api('/auth/forgot-password', { method: 'POST', body: JSON.stringify({ email: resetEmail }) }); $('#otp-error').textContent = 'Si cette adresse correspond à un compte, un nouveau code sera envoyé.'; }
+  catch (error) { $('#otp-error').textContent = error.message; }
+});
+
+$('#reset-form').addEventListener('submit', async (event) => {
+  event.preventDefault(); const form = event.currentTarget; if (!form.reportValidity()) return;
+  const values = Object.fromEntries(new FormData(form));
+  if (values.password.length < 10) { $('#reset-error').textContent = 'Le mot de passe doit contenir au moins 10 caractères.'; return; }
+  if (values.password !== values.confirmPassword) { $('#reset-error').textContent = 'Les mots de passe ne correspondent pas.'; return; }
+  const button = $('button[type="submit"]', form); button.disabled = true;
+  try {
+    const result = await api('/auth/reset-password', { method: 'POST', body: JSON.stringify({ email: resetEmail, resetToken, ...values }) });
+    resetToken = ''; form.reset(); setAuthView('login'); $('#login-error').textContent = result.message;
+  } catch (error) { $('#reset-error').textContent = error.message; }
+  finally { button.disabled = false; }
 });
 
 $('#google-auth').addEventListener('click', () => { window.location.assign(`${API_URL}/auth/google`); });

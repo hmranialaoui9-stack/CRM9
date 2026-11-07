@@ -117,32 +117,33 @@ Depuis le backend, les routes peuvent être vérifiées dans Postman avec les m�
 
 ## Comptes, connexion et sécurité
 
-L'application demande une connexion pour accéder au tableau de bord et aux routes `friends`. Les comptes locaux acceptent un numéro de téléphone et une adresse `@gmail.com`. Les mots de passe sont hachés avec bcrypt (coût 12) ; l'API délivre un JWT signé dans un cookie `HttpOnly`, `SameSite` et `Secure` en production. Le frontend ne reçoit jamais le JWT. Les inscriptions et connexions sont limitées en fréquence. La récupération de mot de passe affiche une indication honnête : un service d'envoi et une procédure de réinitialisation doivent encore être configurés.
+L'application demande une connexion pour accéder au tableau de bord et aux routes `friends`. Les comptes locaux acceptent un numéro de téléphone et une adresse `@gmail.com`; le nom complet est stocké dans `fullName`, avec `nom` et `prenom` maintenus pour compatibilité avec les anciens comptes. Les mots de passe sont hachés avec bcrypt (coût 12) ; l'API délivre un JWT signé dans un cookie `HttpOnly`, `SameSite` et `Secure` en production. Le frontend ne reçoit jamais le JWT. Google OAuth vérifie l'identité et l'email via Google OpenID Connect. La récupération utilise un OTP à 6 chiffres, haché en base, expirant après 10 minutes et limité à cinq essais.
 
-Les variables nécessaires sont listées dans `backend/.env.example`. Le fichier `backend/.env` existant n'a pas été remplacé. Ajoute les valeurs suivantes dans la configuration locale ou les variables Railway, en préservant les variables déjà présentes :
+Les variables nécessaires sont listées dans `backend/.env.example`. Le fichier `backend/.env` existant n'a pas été remplacé. Ajoute les valeurs suivantes dans l'environnement backend, en préservant les variables déjà présentes :
 
 - `JWT_SECRET` : secret aléatoire d'au moins 32 octets ; génère-le avec `node -e "console.log(require('node:crypto').randomBytes(48).toString('base64url'))"`.
 - `FRONTEND_URL` : origine du frontend, par exemple `http://localhost:5500`.
-- `API_PUBLIC_URL` : origine publique du backend, par exemple `https://mon-api.up.railway.app`.
+- `API_PUBLIC_URL` : origine publique de l'API, par exemple `http://localhost:4000` ou le domaine Vercel en production.
 - `CORS_ORIGIN` : origine exacte du frontend autorisé (sans chemin), par exemple `http://localhost:5500`.
 - `GOOGLE_CLIENT_ID` et `GOOGLE_CLIENT_SECRET` : identifiants OAuth du projet Google Cloud.
 - `GOOGLE_CALLBACK_URL` : `http://localhost:4000/api/auth/google/callback` en local ; en production, l'URL publique de l'API suivie de `/api/auth/google/callback`.
-- `COOKIE_SAME_SITE=none` lorsque Vercel et Railway utilisent des domaines distincts. En production `Secure` est automatiquement activé. Des domaines personnalisés sous le même domaine de site améliorent la compatibilité des cookies navigateur.
+- `SMTP_USER` et `SMTP_PASS` : compte Gmail expéditeur et mot de passe d'application Google (pas le mot de passe normal du compte).
+- `COOKIE_SAME_SITE=none` uniquement si frontend et API sont sur des domaines de site distincts. Avec le déploiement Vercel combiné décrit ci-dessous, le même domaine permet de garder la valeur par défaut `lax`.
 
 ### Configurer Google OAuth
 
 1. Dans Google Cloud Console, crée un projet, configure l'écran de consentement OAuth et ajoute les utilisateurs de test si l'application est en mode test.
-2. Crée un identifiant OAuth de type **Application Web**. Ajoute `http://localhost:4000/api/auth/google/callback` aux URI de redirection autorisés en local, puis l'URL Railway `/api/auth/google/callback` en production.
-3. Copie le Client ID et le Client Secret dans les variables d'environnement du backend. Ne mets jamais le secret dans Vercel ni dans les fichiers frontend.
-4. Ajoute l'origine Vercel à `CORS_ORIGIN`, et renseigne `FRONTEND_URL` et `API_PUBLIC_URL`. Redéploie l'API puis le frontend.
+2. Crée un identifiant OAuth de type **Application Web**. Ajoute `http://localhost:4000/api/auth/google/callback` aux URI de redirection autorisés en local, puis `https://<domaine-vercel>/api/auth/google/callback` en production. Ajoute les origines locales et production aux origines JavaScript autorisées.
+3. Configure `GOOGLE_CLIENT_ID` et `GOOGLE_CLIENT_SECRET` dans l'environnement backend (Variables Vercel pour ce déploiement intégré). Le secret reste côté serveur et ne doit jamais être ajouté au frontend ou au dépôt.
+4. Renseigne `FRONTEND_URL` et `API_PUBLIC_URL` avec l'origine frontend/API, puis redéploie.
 
-Le bouton Google lance le flux OAuth Authorization Code réel avec validation du paramètre `state`, échange du code côté serveur, vérification de l'adresse Gmail confirmée par Google, puis création ou liaison du compte.
+Le bouton Google lance le flux OAuth Authorization Code réel avec validation du paramètre `state`, échange du code côté serveur, vérification d'une adresse confirmée par Google, puis création ou liaison du compte.
 
-### Déploiement Vercel + Railway
+### Déploiement Vercel
 
-- **Railway** : crée un service Node depuis `CRM/backend`, commande de démarrage `npm start`, ajoute `MONGODB_URI`, `JWT_SECRET`, `NODE_ENV=production`, `FRONTEND_URL`, `API_PUBLIC_URL`, `CORS_ORIGIN`, les variables Google et `COOKIE_SAME_SITE=none`. Ajoute le domaine Railway aux URI de redirection OAuth et autorise le serveur Railway dans les règles réseau de MongoDB Atlas.
-- **Vercel** : déploie le dossier `CRM/frontend` comme site statique. Avant `js/app.js`, définis `window.CLUB_API_URL = 'https://<domaine-api-railway>/api';` dans `frontend/index.html` avec le domaine public Railway. Renseigne ensuite cette origine Vercel dans `CORS_ORIGIN` côté Railway.
-- Vérifie `/api/health`, puis l'inscription, une connexion locale, la déconnexion et Google OAuth après avoir configuré de vrais identifiants. Les cookies tiers peuvent être bloqués si les domaines frontend/API sont différents ; privilégie des domaines personnalisés liés ou un proxy Vercel sous le même domaine.
+Le dépôt se déploie en un seul projet Vercel depuis sa racine. Configure les variables dans **Project Settings → Environment Variables**, puis redéploie : `MONGODB_URI`, `JWT_SECRET`, `NODE_ENV=production`, `FRONTEND_URL=https://<domaine-vercel>`, `API_PUBLIC_URL=https://<domaine-vercel>`, `CORS_ORIGIN=https://<domaine-vercel>`, `SMTP_USER`, `SMTP_PASS`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` et `GOOGLE_CALLBACK_URL=https://<domaine-vercel>/api/auth/google/callback`. Ajoute aussi le domaine Vercel dans les URI de redirection Google et dans MongoDB Atlas **Network Access**. Ne définis pas `window.CLUB_API_URL` pour ce déploiement même origine.
+
+Pour lancer localement, copie `backend/.env.example` vers `backend/.env`, renseigne les valeurs locales, puis lance `npm run dev` dans `backend`. Ouvre le frontend sur `http://localhost:5500`. Crée un mot de passe d'application Google pour `SMTP_PASS` et active OAuth dans Google Cloud. Après déploiement, contrôle `/api/health`, inscription, connexion, déconnexion, réinitialisation email et OAuth dans un navigateur.
 
 ## API d'authentification
 
@@ -150,12 +151,38 @@ Toutes les réponses sont JSON, sauf les routes de redirection OAuth.
 
 | Méthode | Route | Accès | Description |
 | --- | --- | --- | --- |
-| POST | `/auth/register` | public | Inscription (`nom`, `prenom`, `telephone`, `email`, `password`, `confirmPassword`) |
+| POST | `/auth/register` | public | Inscription (`fullName`, `telephone`, `email`, `password`, `confirmPassword`; accepte aussi l'ancien couple `nom`/`prenom`) |
 | POST | `/auth/login` | public | Connexion (`identifier` téléphone ou Gmail, `password`) |
+| POST | `/auth/forgot-password` | public | Demande de code OTP (`email`); réponse générique |
+| POST | `/auth/verify-otp` | public | Vérification (`email`, `code`), renvoie un jeton de réinitialisation à usage unique |
+| POST | `/auth/reset-password` | public | Nouveau mot de passe (`email`, `resetToken`, `password`, `confirmPassword`) |
 | POST | `/auth/logout` | public | Efface le cookie de session |
 | GET | `/auth/me` | session requise | Retourne le profil connecté |
 | GET | `/auth/google` | public | Démarre Google OAuth |
 | GET | `/auth/google/callback` | OAuth | Vérifie le retour Google et ouvre une session |
+
+### Essais Postman
+
+Utilise `http://localhost:4000/api` en local, avec `Content-Type: application/json`. Le cookie `club_access` est HttpOnly : active la gestion des cookies Postman pour les requêtes `/auth/me` et `/friends`.
+
+```http
+POST /auth/register
+{"fullName":"Hicham Alaoui","telephone":"0612345678","email":"hicham@gmail.com","password":"MotDePasse10!","confirmPassword":"MotDePasse10!"}
+
+POST /auth/login
+{"identifier":"hicham@gmail.com","password":"MotDePasse10!"}
+
+POST /auth/forgot-password
+{"email":"hicham@gmail.com"}
+
+POST /auth/verify-otp
+{"email":"hicham@gmail.com","code":"123456"}
+
+POST /auth/reset-password
+{"email":"hicham@gmail.com","resetToken":"JETON_RENVOYE_PAR_VERIFY","password":"NouveauPass10!","confirmPassword":"NouveauPass10!"}
+```
+
+Après `verify-otp`, récupère `resetToken` dans la réponse JSON pour l'étape finale. Teste Google dans un navigateur via `GET /auth/google` : l'aller-retour OAuth ne se teste pas avec un simple appel Postman.
 
 Les routes REST `/friends` et `/friends/:id` nécessitent désormais le cookie de session. L'API conserve le modèle et les routes de gestion des amis.
 
@@ -171,7 +198,7 @@ Ainsi, `/` sert `public/index.html`, tandis que `/api/health`, `/api/friends` et
 - **Install Command** : défini dans `vercel.json` (`npm ci --prefix backend`), qui utilise `CRM/backend/package-lock.json` sans chercher un package imbriqué.
 - **Build Command** : défini dans `vercel.json` (`npm --prefix backend run build`).
 - **Output Directory** : laisser le réglage par défaut ; le dossier `public/` est publié par Vercel.
-- Variables Production : `MONGODB_URI` (URI Atlas), `NODE_ENV=production`, `JWT_SECRET` (au moins 32 octets), `CORS_ORIGIN=https://crm-9-xab8.vercel.app`, `FRONTEND_URL=https://crm-9-xab8.vercel.app`, `API_PUBLIC_URL=https://crm-9-xab8.vercel.app`, ainsi que les clés Google OAuth si elles sont utilisées.
+- Variables Production : `MONGODB_URI` (URI Atlas), `NODE_ENV=production`, `JWT_SECRET` (au moins 32 octets), `CORS_ORIGIN`, `FRONTEND_URL`, `API_PUBLIC_URL` (les trois à l'origine Vercel), `SMTP_USER`, `SMTP_PASS`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` et `GOOGLE_CALLBACK_URL=https://<domaine-vercel>/api/auth/google/callback`.
 - Dans MongoDB Atlas, vérifie les droits de l'utilisateur DB et **Network Access** pour les connexions du déploiement Vercel. La valeur privée de `MONGODB_URI` n'a pas été lue ni modifiée.
 
 Après le déploiement, vérifie `https://<domaine-vercel>/`, `https://<domaine-vercel>/api/health` et, après connexion, `https://<domaine-vercel>/api/friends`. Le statut health doit contenir `status: "ok"` et `database: "connected"` quand Atlas est joignable.

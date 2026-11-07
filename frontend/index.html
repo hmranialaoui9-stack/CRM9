@@ -26,14 +26,28 @@
         <button class="auth-submit" type="submit">Se connecter <span>→</span></button>
       </form>
       <form id="register-form" class="auth-form" novalidate hidden>
-        <div class="auth-fields-pair"><label>Nom<input name="nom" autocomplete="family-name" required maxlength="80" placeholder="Alaoui"></label><label>Prénom<input name="prenom" autocomplete="given-name" required maxlength="80" placeholder="Hicham"></label></div>
+        <label>Nom complet<input name="fullName" autocomplete="name" required maxlength="120" placeholder="Hicham Alaoui"></label>
         <label>Numéro de téléphone<input name="telephone" type="tel" autocomplete="tel" required maxlength="24" placeholder="0612345678"></label>
         <label>Adresse Gmail<input name="email" type="email" autocomplete="email" required placeholder="vous@gmail.com" pattern="^[^\s@]+@gmail\.com$"></label>
         <div class="auth-fields-pair"><label>Mot de passe<input name="password" type="password" autocomplete="new-password" required minlength="10" maxlength="72" placeholder="10 caractères minimum"></label><label>Confirmation<input name="confirmPassword" type="password" autocomplete="new-password" required minlength="10" maxlength="72" placeholder="Répétez le mot de passe"></label></div>
         <p class="auth-message" id="register-error" role="alert"></p>
         <button class="auth-submit" type="submit">Créer mon compte <span>→</span></button>
       </form>
-      <section id="forgot-panel" class="forgot-panel" hidden><p>La récupération automatique par email sera disponible après la configuration d’un service d’envoi sécurisé. Pour le moment, contactez l’administrateur du club.</p></section>
+      <form id="forgot-form" class="auth-form" novalidate hidden>
+        <label>Adresse Gmail<input name="email" type="email" autocomplete="email" required placeholder="vous@gmail.com" pattern="^[^\s@]+@gmail\.com$"></label>
+        <p class="auth-message" id="forgot-error" role="alert"></p><p class="auth-hint">Si un compte correspond à cette adresse, tu recevras un code.</p>
+        <button class="auth-submit" type="submit">Envoyer un code <span>→</span></button>
+      </form>
+      <form id="otp-form" class="auth-form" novalidate hidden>
+        <label>Code de vérification<input name="code" inputmode="numeric" autocomplete="one-time-code" required minlength="6" maxlength="6" pattern="\d{6}" placeholder="123456"></label>
+        <p class="auth-message" id="otp-error" role="alert"></p><button class="auth-submit" type="submit">Vérifier le code <span>→</span></button>
+        <button class="auth-text-button auth-resend" type="button" id="resend-code">Renvoyer un code</button>
+      </form>
+      <form id="reset-form" class="auth-form" novalidate hidden>
+        <label>Nouveau mot de passe<input name="password" type="password" autocomplete="new-password" required minlength="10" maxlength="72" placeholder="10 caractères minimum"></label>
+        <label>Confirmation du mot de passe<input name="confirmPassword" type="password" autocomplete="new-password" required minlength="10" maxlength="72" placeholder="Répétez le mot de passe"></label>
+        <p class="auth-message" id="reset-error" role="alert"></p><button class="auth-submit" type="submit">Modifier le mot de passe <span>→</span></button>
+      </form>
       <div class="auth-divider"><span>ou</span></div>
       <button class="google-button" type="button" id="google-auth"><span class="google-g">G</span>Continuer avec Google</button>
       <p class="auth-switch" id="auth-switch-login">Vous n’avez pas encore de compte ? <button type="button" data-auth-view="register">Créer un compte</button></p>
