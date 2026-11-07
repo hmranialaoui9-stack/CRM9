@@ -12,36 +12,13 @@ const authRoutes = require('./routes/authRoutes');
 const errorMiddleware = require('./middleware/errorMiddleware');
 const { parseCookies, requireAuth } = require('./middleware/authMiddleware');
 const originGuard = require('./middleware/originGuard');
+const { isAllowedOrigin, parseAllowedOrigins } = originGuard;
 
 const app = express();
 
-const allowedOrigins = (process.env.CORS_ORIGIN || '')
-  .split(',')
-  .map((origin) => origin.trim())
-  .filter(Boolean);
+const allowedOrigins = parseAllowedOrigins();
 
 const isDevelopment = process.env.NODE_ENV !== 'production';
-
-const isAllowedOrigin = (origin) => {
-  if (!origin) return true;
-
-  if (allowedOrigins.includes(origin)) return true;
-
-  if (
-    /^https:\/\/club-des-amis-[a-z0-9-]+-hmranialaoui9-stacks-projects\.vercel\.app$/.test(origin)
-  ) {
-    return true;
-  }
-
-  if (
-    isDevelopment &&
-    /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)
-  ) {
-    return true;
-  }
-
-  return false;
-};
 
 if (!isDevelopment) {
   app.set('trust proxy', 1);
@@ -49,12 +26,11 @@ if (!isDevelopment) {
 
 app.use(cors({
   credentials: true,
+  optionsSuccessStatus: 204,
   origin(origin, callback) {
-    if (isAllowedOrigin(origin)) {
-      return callback(null, true);
-    }
-
-    return callback(new Error('Origine non autorisée par CORS.'));
+    // Disallowed origins receive no CORS headers; originGuard returns 403 for
+    // unsafe methods. Avoid surfacing expected CORS denials as server errors.
+    return callback(null, isAllowedOrigin(origin, allowedOrigins));
   },
 }));
 

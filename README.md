@@ -124,7 +124,7 @@ Les variables nécessaires sont listées dans `backend/.env.example`. Le fichier
 - `JWT_SECRET` : secret aléatoire d'au moins 32 octets ; génère-le avec `node -e "console.log(require('node:crypto').randomBytes(48).toString('base64url'))"`.
 - `FRONTEND_URL` : origine du frontend, par exemple `http://localhost:5500`.
 - `API_PUBLIC_URL` : origine publique de l'API, par exemple `http://localhost:4000` ou le domaine Vercel en production.
-- `CORS_ORIGIN` : origine exacte du frontend autorisé (sans chemin), par exemple `http://localhost:5500`.
+- `CORS_ORIGIN` : une ou plusieurs origines séparées par des virgules, sans chemin. En production, configure `https://club-des-amis.vercel.app`; les previews Vercel de ce projet sont reconnues séparément.
 - `GOOGLE_CLIENT_ID` et `GOOGLE_CLIENT_SECRET` : identifiants OAuth du projet Google Cloud.
 - `GOOGLE_CALLBACK_URL` : `http://localhost:4000/api/auth/google/callback` en local ; en production, l'URL publique de l'API suivie de `/api/auth/google/callback`.
 - `SMTP_USER` et `SMTP_PASS` : compte Gmail expéditeur et mot de passe d'application Google (pas le mot de passe normal du compte).
@@ -141,7 +141,7 @@ Le bouton Google lance le flux OAuth Authorization Code réel avec validation du
 
 ### Déploiement Vercel
 
-Le dépôt se déploie en un seul projet Vercel depuis sa racine. Configure les variables dans **Project Settings → Environment Variables**, puis redéploie : `MONGODB_URI`, `JWT_SECRET`, `NODE_ENV=production`, `FRONTEND_URL=https://<domaine-vercel>`, `API_PUBLIC_URL=https://<domaine-vercel>`, `CORS_ORIGIN=https://<domaine-vercel>`, `SMTP_USER`, `SMTP_PASS`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` et `GOOGLE_CALLBACK_URL=https://<domaine-vercel>/api/auth/google/callback`. Ajoute aussi le domaine Vercel dans les URI de redirection Google et dans MongoDB Atlas **Network Access**. Ne définis pas `window.CLUB_API_URL` pour ce déploiement même origine.
+Le dépôt se déploie en un seul projet Vercel depuis sa racine. Configure les variables dans **Project Settings → Environment Variables**, puis redéploie : `MONGODB_URI`, `JWT_SECRET`, `NODE_ENV=production`, `FRONTEND_URL=https://club-des-amis.vercel.app`, `API_PUBLIC_URL=https://club-des-amis.vercel.app`, `CORS_ORIGIN=https://club-des-amis.vercel.app`, `SMTP_USER`, `SMTP_PASS`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` et `GOOGLE_CALLBACK_URL=https://club-des-amis.vercel.app/api/auth/google/callback`. Ajoute aussi le domaine Vercel dans les URI de redirection Google et dans MongoDB Atlas **Network Access**. Ne définis pas `window.CLUB_API_URL` pour ce déploiement même origine. Les origines Preview sont filtrées par un motif strict `club-des-amis-…-hmranialaoui9-stacks-projects.vercel.app`.
 
 Pour lancer localement, copie `backend/.env.example` vers `backend/.env`, renseigne les valeurs locales, puis lance `npm run dev` dans `backend`. Ouvre le frontend sur `http://localhost:5500`. Crée un mot de passe d'application Google pour `SMTP_PASS` et active OAuth dans Google Cloud. Après déploiement, contrôle `/api/health`, inscription, connexion, déconnexion, réinitialisation email et OAuth dans un navigateur.
 
@@ -198,7 +198,7 @@ Ainsi, `/` sert `public/index.html`, tandis que `/api/health`, `/api/friends` et
 - **Install Command** : défini dans `vercel.json` (`npm ci --prefix backend`), qui utilise `CRM/backend/package-lock.json` sans chercher un package imbriqué.
 - **Build Command** : défini dans `vercel.json` (`npm --prefix backend run build`).
 - **Output Directory** : laisser le réglage par défaut ; le dossier `public/` est publié par Vercel.
-- Variables Production : `MONGODB_URI` (URI Atlas), `NODE_ENV=production`, `JWT_SECRET` (au moins 32 octets), `CORS_ORIGIN`, `FRONTEND_URL`, `API_PUBLIC_URL` (les trois à l'origine Vercel), `SMTP_USER`, `SMTP_PASS`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` et `GOOGLE_CALLBACK_URL=https://<domaine-vercel>/api/auth/google/callback`.
+- Variables Production : `MONGODB_URI` (URI Atlas), `NODE_ENV=production`, `JWT_SECRET` (au moins 32 octets), `CORS_ORIGIN=https://club-des-amis.vercel.app`, `FRONTEND_URL` et `API_PUBLIC_URL` (à `https://club-des-amis.vercel.app`), `SMTP_USER`, `SMTP_PASS`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` et `GOOGLE_CALLBACK_URL=https://club-des-amis.vercel.app/api/auth/google/callback`.
 - Dans MongoDB Atlas, vérifie les droits de l'utilisateur DB et **Network Access** pour les connexions du déploiement Vercel. La valeur privée de `MONGODB_URI` n'a pas été lue ni modifiée.
 
 Après le déploiement, vérifie `https://<domaine-vercel>/`, `https://<domaine-vercel>/api/health` et, après connexion, `https://<domaine-vercel>/api/friends`. Le statut health doit contenir `status: "ok"` et `database: "connected"` quand Atlas est joignable.
